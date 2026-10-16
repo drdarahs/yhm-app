@@ -19,7 +19,7 @@ if (Capacitor.isNativePlatform()) {
     ready() {
       SplashScreen.hide().catch(() => {});
       StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
-      StatusBar.setBackgroundColor({ color: '#2a1694' }).catch(() => {});
+      StatusBar.setBackgroundColor({ color: '#1b4074' }).catch(() => {});
     },
 
     health: {
@@ -75,7 +75,7 @@ if (Capacitor.isNativePlatform()) {
         if (p.display === 'granted') {
           await LocalNotifications.createChannel({
             id: CHANNEL, name: 'Training reminders', description: 'Daily training, water and sleep reminders',
-            importance: 4, visibility: 1, vibration: true, lights: true, lightColor: '#5B3CF0',
+            importance: 4, visibility: 1, vibration: true, lights: true, lightColor: '#1B4074',
           }).catch(() => {});
           return true;
         }
@@ -97,7 +97,7 @@ if (Capacitor.isNativePlatform()) {
           channelId: CHANNEL,
           isExactNotification: false,
           smallIcon: 'ic_stat_yhm',
-          iconColor: '#5B3CF0',
+          iconColor: '#1B4074',
           schedule: it.at
             ? { at: new Date(it.at), allowWhileIdle: true }
             : { on: { hour: it.hour, minute: it.minute }, allowWhileIdle: true },

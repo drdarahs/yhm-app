@@ -16,6 +16,10 @@ Training app for Yavatmal Health Marathon 2027 runners. Organised by Cotton City
 
 ## Get the installable app (APK)
 
+**Live now:** code is at https://github.com/drdarahs/yhm-app. Download the latest APK from https://github.com/drdarahs/yhm-app/releases/latest (first build: YHM Coach 1.0.1, 16 Oct 2026). Every change pushed to `main` builds a new release automatically.
+
+The steps below are how it was set up, for reference.
+
 The app is built in the cloud by GitHub, for free. You do this once; after that every change rebuilds automatically.
 
 ### Easiest: let Claude upload it
@@ -71,7 +75,7 @@ If the file isn't there, the app shows the updates built into it.
    - **Privacy policy URL**: upload `app/privacypolicy.html` to the website, e.g. `yavatmalhealthmarathon.com/privacypolicy.html`
    - **Health Connect declaration**: the app reads Exercise, Distance, Heart rate, Steps and Weight to show training progress. It writes nothing.
    - **Data safety**: no data collected or shared; all data stays on the device.
-   - **Store graphics**: `brand/play-icon.png` (512 × 512) and `brand/play-feature-graphic.png` (1024 × 500)
+   - **Store graphics**: `brand/play-icon.png` (512 × 512, official YHM logo) and `brand/play-feature-graphic.png` (1024 × 500)
 
 ---
 
@@ -81,6 +85,6 @@ If the file isn't there, the app shows the updates built into it.
 - Native bridge: `src/native.js` (Capacitor 8, `@capgo/capacitor-health`, `@capacitor/local-notifications`)
 - Build the app's web folder: `npm run build:web` → `app-www/`
 - Local build: `npm ci && npm run sync`, then open `android/` in Android Studio and press Run
-- Brand art: `brand/render.py` renders icons, splash and store graphics from SVG
+- Brand art: official logos and stadium photo in `brand/source`; `python3 brand/make_assets.py` rebuilds the app icons, splash and store graphics
 - `android/app/yhm-sideload.keystore` signs test APKs so updates install over each other. It is not the Play Store key.
 - App ID: `com.yavatmalhealthmarathon.coach` · min Android 8.0 (API 26) · target API 36
