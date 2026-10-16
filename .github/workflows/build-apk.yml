@@ -1,0 +1,73 @@
+name: Build YHM Coach app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      YHM_VERSION_CODE: ${{ github.run_number }}
+      HAS_PLAY_KEY: ${{ secrets.YHM_KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install packages
+        run: npm ci
+
+      - name: Build web app and copy into Android
+        run: npm run sync
+
+      - name: Build installable APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease
+
+      - name: Build Play Store bundle (only when the upload key is set up)
+        if: ${{ env.HAS_PLAY_KEY == 'true' }}
+        working-directory: android
+        env:
+          YHM_KEYSTORE_PASSWORD: ${{ secrets.YHM_KEYSTORE_PASSWORD }}
+          YHM_KEY_ALIAS: ${{ secrets.YHM_KEY_ALIAS }}
+          YHM_KEY_PASSWORD: ${{ secrets.YHM_KEY_PASSWORD }}
+        run: |
+          echo "${{ secrets.YHM_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/play.keystore"
+          YHM_KEYSTORE_PATH="$RUNNER_TEMP/play.keystore" ./gradlew --no-daemon bundleRelease
+
+      - name: Name the files
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk "out/YHM-Coach-1.0.${{ github.run_number }}.apk"
+          if [ -f android/app/build/outputs/bundle/release/app-release.aab ]; then cp android/app/build/outputs/bundle/release/app-release.aab "out/YHM-Coach-1.0.${{ github.run_number }}.aab"; fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: YHM-Coach-1.0.${{ github.run_number }}
+          path: out/*
+
+      - name: Publish a download page (GitHub Release)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: YHM Coach 1.0.${{ github.run_number }}
+          body: |
+            Install on Android: download the .apk below on your phone, open it, and allow "Install unknown apps" when asked.
+            Each new version installs over the previous one; your plan and logs stay.
+          files: out/*
