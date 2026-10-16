@@ -45,10 +45,9 @@ jobs:
         working-directory: android
         env:
           YHM_KEYSTORE_PASSWORD: ${{ secrets.YHM_KEYSTORE_PASSWORD }}
-          YHM_KEY_ALIAS: ${{ secrets.YHM_KEY_ALIAS }}
-          YHM_KEY_PASSWORD: ${{ secrets.YHM_KEY_PASSWORD }}
+          YHM_KEYSTORE_BASE64: ${{ secrets.YHM_KEYSTORE_BASE64 }}
         run: |
-          echo "${{ secrets.YHM_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/play.keystore"
+          printf '%s' "$YHM_KEYSTORE_BASE64" | tr -d ' \n\r' | base64 -d > "$RUNNER_TEMP/play.keystore"
           YHM_KEYSTORE_PATH="$RUNNER_TEMP/play.keystore" ./gradlew --no-daemon bundleRelease
 
       - name: Name the files

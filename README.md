@@ -64,12 +64,10 @@ If the file isn't there, the app shows the updates built into it.
 ## Publishing on Google Play (later)
 
 1. Create a Google Play Console developer account (one-time USD 25 fee).
-2. Make an upload key on a computer with Java:
-   `keytool -genkeypair -v -keystore upload.keystore -alias yhm -keyalg RSA -keysize 2048 -validity 10000`
-   Keep this file and its password safe. Losing it means you can't update the app.
-3. In the GitHub repository: **Settings → Secrets and variables → Actions**, add:
-   - `YHM_KEYSTORE_BASE64`: the keystore file in base64 (`base64 -w0 upload.keystore`)
-   - `YHM_KEYSTORE_PASSWORD`, `YHM_KEY_ALIAS` (`yhm`), `YHM_KEY_PASSWORD`
+2. Upload key: Claude created `yhm-coach-upload.keystore` (alias `yhm`). Keep the file and its password safe and private. Never put them in this repository.
+3. In the GitHub repository: **Settings → Secrets and variables → Actions → New repository secret**, add two secrets:
+   - `YHM_KEYSTORE_BASE64`: the contents of `keystore-base64.txt`
+   - `YHM_KEYSTORE_PASSWORD`: the contents of `password.txt`
 4. The next build also produces `YHM-Coach-1.0.N.aab`. Upload that to Play Console.
 5. Play Console will ask for:
    - **Privacy policy URL**: upload `app/privacypolicy.html` to the website, e.g. `yavatmalhealthmarathon.com/privacypolicy.html`

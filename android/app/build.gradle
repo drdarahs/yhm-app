@@ -29,8 +29,8 @@ android {
             play {
                 storeFile file(System.getenv('YHM_KEYSTORE_PATH'))
                 storePassword System.getenv('YHM_KEYSTORE_PASSWORD')
-                keyAlias System.getenv('YHM_KEY_ALIAS')
-                keyPassword System.getenv('YHM_KEY_PASSWORD')
+                keyAlias System.getenv('YHM_KEY_ALIAS') ?: 'yhm'
+                keyPassword System.getenv('YHM_KEY_PASSWORD') ?: System.getenv('YHM_KEYSTORE_PASSWORD')
             }
         }
     }
