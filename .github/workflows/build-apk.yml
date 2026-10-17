@@ -3,6 +3,7 @@ name: Build YHM Coach app
 on:
   push:
     branches: [main]
+    paths-ignore: ['watchface/**', '.github/workflows/build-watchface.yml']
   workflow_dispatch:
 
 permissions:

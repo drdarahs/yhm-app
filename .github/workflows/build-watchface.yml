@@ -1,0 +1,128 @@
+name: Build YHM watch face (Garmin)
+
+on:
+  push:
+    branches: [main]
+    paths: ['watchface/**', '.github/workflows/build-watchface.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  garmin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      HAS_GARMIN: ${{ secrets.GARMIN_USERNAME != '' && secrets.GARMIN_PASSWORD != '' }}
+    steps:
+      - name: Check Garmin login is set up
+        if: ${{ env.HAS_GARMIN != 'true' }}
+        run: |
+          echo "::warning::Add the GARMIN_USERNAME and GARMIN_PASSWORD secrets (Settings → Secrets and variables → Actions) to build the watch face."
+
+      - uses: actions/checkout@v4
+        if: ${{ env.HAS_GARMIN == 'true' }}
+
+      - uses: actions/setup-java@v4
+        if: ${{ env.HAS_GARMIN == 'true' }}
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install Garmin SDK manager
+        if: ${{ env.HAS_GARMIN == 'true' }}
+        run: |
+          curl -s https://raw.githubusercontent.com/lindell/connect-iq-sdk-manager-cli/master/install.sh | sh -s -- -b "$HOME/bin" v0.8.4
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Sign in, accept the SDK licence and get the SDK
+        if: ${{ env.HAS_GARMIN == 'true' }}
+        env:
+          GARMIN_USERNAME: ${{ secrets.GARMIN_USERNAME }}
+          GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
+        run: |
+          connect-iq-sdk-manager agreement accept
+          connect-iq-sdk-manager login
+          connect-iq-sdk-manager sdk list '>=7.0.0' || true
+          connect-iq-sdk-manager sdk set '>=7.0.0'
+          echo "$(connect-iq-sdk-manager sdk current-path --bin)" >> "$GITHUB_PATH"
+
+      - name: Download watch models
+        if: ${{ env.HAS_GARMIN == 'true' }}
+        run: |
+          ok=""; skipped=""
+          for d in $(grep -v '^#' watchface/products.txt | tr -d '\r' | sed '/^$/d'); do
+            if connect-iq-sdk-manager device download -d "$d" > /dev/null 2>&1; then ok="$ok $d"; else skipped="$skipped $d"; fi
+          done
+          echo "Downloaded:$ok"
+          echo "Skipped (unknown to Garmin):$skipped"
+          [ -n "$ok" ] || { echo "::error::No watch models downloaded"; exit 1; }
+          python3 - "$ok" <<'PY'
+          import re, sys
+          ids = sys.argv[1].split()
+          p = "watchface/manifest.xml"
+          s = open(p).read()
+          prods = "\n".join(f'            <iq:product id="{i}"/>' for i in ids)
+          s = re.sub(r"<iq:products>.*?</iq:products>", "<iq:products>\n" + prods + "\n        </iq:products>", s, flags=re.S)
+          open(p, "w").write(s)
+          PY
+          echo "PRODUCTS=$ok" >> "$GITHUB_ENV"
+
+      - name: Developer key
+        if: ${{ env.HAS_GARMIN == 'true' }}
+        env:
+          KEY: ${{ secrets.CIQ_DEVELOPER_KEY_BASE64 }}
+        run: |
+          if [ -n "$KEY" ]; then
+            printf '%s' "$KEY" | tr -d ' \n\r' | base64 -d > "$RUNNER_TEMP/developer_key.der"
+          else
+            echo "::warning::No CIQ_DEVELOPER_KEY_BASE64 secret: using a temporary key (fine for testing, not for the Connect IQ Store)."
+            openssl genrsa -out "$RUNNER_TEMP/k.pem" 4096
+            openssl pkcs8 -topk8 -inform PEM -outform DER -in "$RUNNER_TEMP/k.pem" -out "$RUNNER_TEMP/developer_key.der" -nocrypt
+          fi
+
+      - name: Build for each watch
+        if: ${{ env.HAS_GARMIN == 'true' }}
+        run: |
+          mkdir -p out/prg
+          built=""; failed=""
+          for d in $PRODUCTS; do
+            if monkeyc -d "$d" -f watchface/monkey.jungle -o "out/prg/YHM2027-$d.prg" -y "$RUNNER_TEMP/developer_key.der" -l 0 -w > "out/build-$d.log" 2>&1; then
+              built="$built $d"
+            else
+              failed="$failed $d"; echo "::group::Build log $d"; cat "out/build-$d.log"; echo "::endgroup::"
+            fi
+          done
+          echo "Built:$built"; echo "Failed:$failed"
+          [ -n "$built" ] || { echo "::error::The watch face did not build for any watch"; exit 1; }
+          rm -f out/prg/*.prg.debug.xml
+          (cd out/prg && zip -q ../YHM2027-watchface-sideload.zip *.prg)
+
+      - name: Package for the Connect IQ Store
+        if: ${{ env.HAS_GARMIN == 'true' }}
+        run: |
+          monkeyc -e -r -f watchface/monkey.jungle -o out/YHM2027-watchface.iq -y "$RUNNER_TEMP/developer_key.der" -l 0 -w || echo "::warning::Store package failed; per-watch files are still available"
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.HAS_GARMIN == 'true' }}
+        with:
+          name: YHM2027-watchface-${{ github.run_number }}
+          path: |
+            out/*.zip
+            out/*.iq
+
+      - name: Publish a download page (GitHub Release)
+        if: ${{ env.HAS_GARMIN == 'true' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: watchface-v1.0.${{ github.run_number }}
+          name: YHM 2027 watch face 1.0.${{ github.run_number }}
+          make_latest: false
+          body: |
+            Garmin watch face for Yavatmal Health Marathon 2027.
+            - YHM2027-watchface.iq: upload to the Connect IQ Store (apps.garmin.com/developer).
+            - YHM2027-watchface-sideload.zip: one .prg per watch model for testing over USB (copy to GARMIN/APPS).
+          files: |
+            out/*.zip
+            out/*.iq
