@@ -70,7 +70,7 @@ If the file isn't there, the app shows the updates built into it.
    - `YHM_KEYSTORE_PASSWORD`: the contents of `password.txt`
 4. The next build also produces `YHM-Coach-1.0.N.aab`. Upload that to Play Console.
 5. Play Console will ask for:
-   - **Privacy policy URL**: upload `app/privacypolicy.html` to the website, e.g. `yavatmalhealthmarathon.com/privacypolicy.html`
+   - **Privacy policy URL**: https://drdarahs.github.io/yhm-app/privacypolicy.html (served by GitHub Pages from `docs/`)
    - **Health Connect declaration**: the app reads Exercise, Distance, Heart rate, Steps and Weight to show training progress. It writes nothing.
    - **Data safety**: no data collected or shared; all data stays on the device.
    - **Store graphics**: `brand/play-icon.png` (512 × 512, official YHM logo) and `brand/play-feature-graphic.png` (1024 × 500)

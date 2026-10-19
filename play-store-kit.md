@@ -22,11 +22,11 @@ Keep `yhm-coach-upload.keystore` and `password.txt` somewhere safe and private, 
 
 ---
 
-## Step 2: Put the privacy policy online
+## Step 2: Privacy policy online ✓ done
 
-Upload `privacypolicy.html` to the root of the Cloudflare site, the same way you upload the other site files. Check that it opens at:
+The policy is live on GitHub Pages (from the `docs/` folder of drdarahs/yhm-app):
 
-**https://www.yavatmalhealthmarathon.com/privacypolicy.html**
+**https://drdarahs.github.io/yhm-app/privacypolicy.html**
 
 ---
 
@@ -139,7 +139,7 @@ Full description:
 ## Step 5: App content (Policy → App content)
 
 **Privacy policy**
-> https://www.yavatmalhealthmarathon.com/privacypolicy.html
+> https://drdarahs.github.io/yhm-app/privacypolicy.html
 
 **App access**
 > All functionality is available without special access (no login).
@@ -217,7 +217,7 @@ Only needed if Play Console shows **Production** as locked for this app. It appl
 
 | When | What |
 |---|---|
-| This week | Secrets in GitHub, privacy page online, app created, forms filled, closed test started |
+| This week | Secrets in GitHub ✓, privacy page online ✓, app created, forms filled, closed test started |
 | +14 days (about 1 November) | Apply for production |
 | +3–7 days | Approved; YHM Coach is public on the Play Store |
 | Until then | Runners install from https://github.com/drdarahs/yhm-app/releases/latest |
