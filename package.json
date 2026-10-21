@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "YHM Coach: training app for Yavatmal Health Marathon runners",
   "scripts": {
-    "build:web": "node scripts/build-web.mjs",
+    "build:web": "node scripts/assemble.mjs && node scripts/build-web.mjs",
     "sync": "npm run build:web && npx cap sync android",
     "apk": "npm run sync && cd android && ./gradlew assembleDebug"
   },

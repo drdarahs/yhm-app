@@ -2,15 +2,19 @@
 
 Training app for Yavatmal Health Marathon 2027 runners. Organised by Cotton City Runners Foundation, Yavatmal.
 
-**What runners get**
+**What runners get** (version 2)
 
-- 5, 10, 21 and 42 km training plans built from age, level, run days and a recent 5 km time, with paces and heart-rate zones
-- Fitness coach: runner strength circuit and yoga/mobility days, adjusted for knee and back pain
-- Nutrition coach: daily calories, carbs, protein and water from age, gender, weight and that day's training; Indian veg, egg and non-veg meals; advice for 13 health conditions and 8 habits
-- **Health Connect sync**: runs, walks and workouts come in automatically from Garmin Connect, Samsung Health, Fitbit, Strava, Google Fit, Mi Fitness, Zepp, COROS and other apps that share to Health Connect, with distance, time, heart rate and today's steps
-- **Phone notifications**: morning training reminder with that day's session, water and food reminders (10 am, 1 pm, 4:30 pm), sleep reminder (10 pm). Work offline.
-- Daily checklist, water tracker, progress rings, weekly chart, race info, race-day checklist, organiser contacts
-- Works fully offline; all data stays on the phone
+- **Several runners on one phone**: each family member, student or club runner gets their own profile, plan, logs and progress. One runner is marked "this phone" and gets watch sync and reminders.
+- Step-by-step setup: about you, goal (5/10/21/42 km), level, run days, recent 5 km time, health conditions, habits, diet, reminder time
+- **Adaptive plans**: fewer than half of last week's sessions done → this week 15% lighter (25% after two light weeks); pain in a note or effort 9–10 → speed sessions become easy runs; faster runs → paces and predicted finish update
+- **Daily tracking**: each day is marked done, partly done or missed by matching synced or logged activities to the plan; week strip on the Today screen
+- **Progress screen**: distance, sessions done %, streak, active days, predicted finish, 5 km estimate, long-run readiness, weekly planned-vs-done chart, pace trend, 14-day steps, weight log
+- **Health Connect sync** (Garmin Connect, Samsung Health, Fitbit, Strava, Google Fit, Mi Fitness, Zepp, COROS…) with distance, time, heart rate, steps and weight; runs on app open; sync details screen; in-app setup steps for each watch brand
+- **Notifications**: today's workout (morning), tomorrow's plan with how to prepare (evening, default 8:30 pm), drink water every 1/2/3 h from 8 am to 8 pm, sleep, Sunday weekly summary, test button
+- Nutrition by age, gender, weight, BMI, day's training, 13 conditions and 8 habits; Indian veg/egg/non-veg meals
+- Race info, updates, registration at www.yavatmalhealthmarathon.com, race-day checklist, organiser contacts
+
+Source: `src/v2/shell.html` (screens and styles), `src/v2/lib.js` (plan, nutrition, file parsers), `src/v2/app.js` (app logic). `npm run build:web` assembles them into `www/index.html`.
 
 ---
 
@@ -48,7 +52,7 @@ Each new build installs over the old one, and runners keep their plan and logs.
 
 ## Posting race updates
 
-The app reads race news from `https://www.yavatmalhealthmarathon.com/updates.json`. To post news, upload a file named `updates.json` to the root of the website on Cloudflare, in this format (newest first):
+The app reads race news from `docs/updates.json` in this repository (served at https://drdarahs.github.io/yhm-app/updates.json), then from `https://www.yavatmalhealthmarathon.com/updates.json`. To post news, edit `docs/updates.json` on GitHub (or ask Claude), in this format (newest first; `link` is optional):
 
 ```json
 [
