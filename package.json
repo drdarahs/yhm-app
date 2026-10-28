@@ -1,17 +1,19 @@
 {
   "name": "yhm-coach",
   "version": "1.0.0",
-  "description": "YHM Coach: training app for Yavatmal Health Marathon runners",
+  "description": "YHM Coach: training app for Yavatmal Health Marathon runners (Android and iPhone)",
   "scripts": {
     "build:web": "node scripts/assemble.mjs && node scripts/build-web.mjs",
     "sync": "npm run build:web && npx cap sync android",
-    "apk": "npm run sync && cd android && ./gradlew assembleDebug"
+    "apk": "npm run sync && cd android && ./gradlew assembleDebug",
+    "sync:ios": "npm run build:web && npx cap sync ios"
   },
   "license": "UNLICENSED",
   "dependencies": {
     "@capacitor/android": "8.5.2",
     "@capacitor/cli": "8.5.2",
     "@capacitor/core": "8.5.2",
+    "@capacitor/ios": "8.5.2",
     "@capacitor/local-notifications": "8.3.1",
     "@capacitor/splash-screen": "8.0.2",
     "@capacitor/status-bar": "8.0.3",

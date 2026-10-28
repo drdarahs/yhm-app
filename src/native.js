@@ -18,8 +18,9 @@ if (Capacitor.isNativePlatform()) {
 
     ready() {
       SplashScreen.hide().catch(() => {});
+      // Light status-bar icons over the navy app header (iPhone draws the header under the status bar).
       StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
-      StatusBar.setBackgroundColor({ color: '#1b4074' }).catch(() => {});
+      if (Capacitor.getPlatform() === 'android') StatusBar.setBackgroundColor({ color: '#1b4074' }).catch(() => {});
     },
 
     health: {

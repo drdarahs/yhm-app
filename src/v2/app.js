@@ -1,6 +1,8 @@
 
 /* ================= app ================= */
 const NATIVE = window.YHMNative || null;
+const IOS = !!(NATIVE&&NATIVE.platform==="ios");
+const HC = IOS?"Apple Health":"Health Connect";
 const RACE_DATE = "2027-01-03";
 const REG_URL = "https://www.yavatmalhealthmarathon.com/";
 const UPDATE_URLS = ["https://drdarahs.github.io/yhm-app/updates.json","https://www.yavatmalhealthmarathon.com/updates.json"];
@@ -153,7 +155,7 @@ function logLine(l){
   const pace=l.km&&l.min&&RUNLIKE(l.type)?" · "+fmtPace(l.min*60/l.km)+" /km":"";
   return (l.km?l.km+" km":"")+(l.min?(l.km?" · ":"")+l.min+" min":"")+pace+(l.hr?" · ♥ "+l.hr:"")+(l.rpe?" · effort "+l.rpe+"/10":"");
 }
-function srcLabel(l){ return l.ex?"Example":l.src==="hc"?l.srcName||"Health Connect":["gpx","tcx","csv"].includes(l.src)?l.src.toUpperCase():l.src==="plan"?"Marked done":""; }
+function srcLabel(l){ return l.ex?"Example":l.src==="hc"?l.srcName||HC:["gpx","tcx","csv"].includes(l.src)?l.src.toUpperCase():l.src==="plan"?"Marked done":""; }
 function zonesHTML(s,pc,p){
   if(!["easy","quality","long","race"].includes(s.type)) return "";
   const hr=pc.hrmax, bb=has(p,"htn")||has(p,"heart");
@@ -287,7 +289,7 @@ function renderPlan(){
     const now=t>=w.mon&&t<addDays(w.mon,7), done=weekDoneKm(r,w), past=addDays(w.mon,6)<t;
     return '<details class="wk'+(now?" wk-now":"")+'"'+(now?" open":"")+'><summary><span class="row" style="gap:8px"><span class="wk-n">Week '+w.n+'</span><span class="phase ph-'+w.phase+'">'+esc(w.phase==="Race"?"Race week":w.phase)+"</span>"+(w.cut?'<span class="tiny">easier week</span>':"")+(now&&AD.ad.scale?'<span class="tiny" style="color:var(--warn)">eased '+Math.round((1-AD.ad.scale)*100)+"%</span>":"")+
       '</span><span class="row" style="gap:6px"><span class="tiny">'+esc(fmtD(w.mon))+'</span><b class="num" style="font-size:1.15rem">'+((now||past)&&done?done+"/":"")+w.km+" km</b></span>"+
-      ((now||past)&&w.km?'<div class="bar wk-bar"><i style="width:'+Math.min(100,done/w.km*100)+'%"></i></div>':"")+"</summary>"+
+      ((now||past)?'<div class="wk-dots" aria-hidden="true">'+w.days.map(d=>{ const st=statusOf(r,d); return '<i class="'+(["done","partial","missed","rest"].includes(st)?st:"")+'"></i>'; }).join("")+"</div>":"")+"</summary>"+
       w.days.map(d=>{ const ds=iso(d.date), st=statusOf(r,d);
         return '<div class="day ty-'+d.type+(ds===iso(t)?" today":"")+'" data-sel="'+ds+'" style="cursor:pointer"><div class="d">'+WD[d.date.getDay()]+"<b>"+d.date.getDate()+"</b></div>"+tile("",TYPE_IC[d.type],"sm")+
         '<div style="min-width:0"><div class="ttl">'+esc(d.title)+"</div>"+(STT[st]?sttChip(st):'<div class="tiny">'+esc(d.steps[0])+"</div>")+'</div><span class="km">'+(d.km?d.km+" km":"")+"</span></div>"; }).join("")+"</details>";
@@ -307,7 +309,10 @@ function renderProgress(){
     if(st==="done"||st==="partial"||st==="rest") streak++; else if(i===0&&st==="today") continue; else break; }
   const cut28=iso(addDays(t,-28)), longest=Math.max(0,...runs.filter(l=>l.date>=cut28).map(l=>+l.km||0)), peak=PEAK[g][p.level];
   const active30=new Set(r.logs.filter(l=>l.date>=iso(addDays(t,-29))).map(l=>l.date)).size;
-  $("#progHead").innerHTML='<div class="card-h"><div class="ttl-row"><span class="av" style="background:'+r.color+";--avc:"+r.color+'">'+esc(initials(p.name))+'</span><div><span class="label">Progress</span><h2>'+esc(p.name||"Runner")+'</h2></div></div><span class="chip ty-primary">'+goalLabel(p.goal)+" km</span></div>"+
+  const pct=n?s/n:0, RC=2*Math.PI*34;
+  $("#progHead").innerHTML='<div class="phero"><div style="position:relative;z-index:1;min-width:0"><div class="ttl-row"><span class="av" style="background:'+r.color+";--avc:"+r.color+'">'+esc(initials(p.name))+'</span><div style="min-width:0"><span class="label">Progress · '+goalLabel(p.goal)+' km</span><h2 style="font-size:1.4rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(p.name||"Runner")+'</h2></div></div>'+
+      '<div class="big" style="margin-top:10px">'+total+'<small>KM</small></div><span class="small" style="opacity:.85">run in the plan so far</span></div>'+
+      '<svg viewBox="0 0 84 84" role="img" aria-label="'+Math.round(pct*100)+'% of sessions done"><circle cx="42" cy="42" r="34" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="8"/><circle class="arc" cx="42" cy="42" r="34" fill="none" stroke="#ffc93c" stroke-width="8" stroke-linecap="round" stroke-opacity="'+(pct>0?1:0)+'" stroke-dasharray="'+(RC*pct).toFixed(1)+" "+RC.toFixed(1)+'" transform="rotate(-90 42 42)"/><text x="42" y="44" text-anchor="middle" font-size="19" font-weight="800" fill="#fff" font-family="Barlow Condensed,Arial Narrow,sans-serif">'+Math.round(pct*100)+'%</text><text x="42" y="58" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,.8)" font-family="Mukta,sans-serif">sessions</text></svg></div>'+
     '<div class="stats">'+stat("ty-primary","road","Distance in plan",total+"<small>km</small>")+stat("ty-easy","check","Sessions done",(n?Math.round(s/n*100):0)+"<small>% · "+Math.round(s)+"/"+n+"</small>")+
     stat("ty-race","flame","On-plan streak",streak+"<small>days</small>")+stat("ty-long","cal","Active days",active30+"<small>/ 30</small>")+
     stat("ty-quality","medal","Predicted finish",PLAN.pc.pred?fmtTime(PLAN.pc.pred):"—")+stat("ty-mobility","bolt","5 km estimate",AD.ad.fiveK?fmtTime(AD.ad.fiveK):PLAN.pc.t5?fmtTime(PLAN.pc.t5):"—")+"</div>"+
@@ -346,7 +351,7 @@ function renderProgress(){
       (i%2===1||i===13?'<text x="'+(10+i*bwd+bwd/2)+'" y="'+(SH-8)+'" font-size="10" text-anchor="middle" fill="'+(i===13?"var(--orange)":"var(--ink-3)")+'">'+parse(days14[i]).getDate()+"</text>":""); });
     ss+='<line x1="10" x2="'+(SW-10)+'" y1="'+gy+'" y2="'+gy+'" stroke="var(--c-long)" stroke-dasharray="4 3"/><text x="'+(SW-10)+'" y="'+(gy-4)+'" font-size="10" text-anchor="end" fill="var(--c-long)">8,000 goal</text></svg>';
     const avg=Math.round(sv.reduce((a,b)=>a+b,0)/sv.filter(v=>v>0).length);
-    sc.innerHTML='<div class="card-h"><div class="ttl-row">'+tile("ty-long","steps","sm")+'<div><h3>Daily steps</h3><span class="tiny">From Health Connect · average '+avg.toLocaleString("en-IN")+"</span></div></div></div>"+ss;
+    sc.innerHTML='<div class="card-h"><div class="ttl-row">'+tile("ty-long","steps","sm")+'<div><h3>Daily steps</h3><span class="tiny">From '+HC+' · average '+avg.toLocaleString("en-IN")+"</span></div></div></div>"+ss;
   } else sc.hidden=true;
   renderWeight(); renderSyncCard(); renderHistory();
 }
@@ -359,7 +364,7 @@ function renderWeight(){
   $("#weightCard").innerHTML='<div class="card-h"><div class="ttl-row">'+tile("ty-strength","user","sm")+'<div><h3>Weight</h3><span class="tiny">BMI '+bmi(p).toFixed(1)+" · nutrition targets use "+p.weight+" kg</span></div></div>"+
     (diff!=null?'<span class="chip '+(diff<=0?"ty-ok":"ty-warn")+'">'+(diff>0?"+":"")+diff+" kg since "+esc(fmtD(parse(first.date)))+"</span>":"")+"</div>"+spark+
     '<form id="wForm" class="row" style="flex-direction:row;flex-wrap:nowrap;align-items:flex-end"><div class="field grow"><label for="wKg">Today\'s weight (kg)</label><input id="wKg" type="number" inputmode="decimal" step="0.1" min="25" max="200" placeholder="'+p.weight+'"></div><button class="btn grad" type="submit">Save</button></form>'+
-    (hcw?'<button class="linkbtn" type="button" data-act="useHcWeight">Use '+hcw+" kg from Health Connect</button>":"");
+    (hcw?'<button class="linkbtn" type="button" data-act="useHcWeight">Use '+hcw+" kg from "+HC+"</button>":"");
 }
 function renderHistory(){
   const r=R(), L=r.logs.slice().sort((a,b)=>b.date.localeCompare(a.date)||String(b.id).localeCompare(String(a.id))).slice(0,60);
@@ -379,7 +384,7 @@ function renderSyncCard(){
   const hc=S.hc||{}, me=S.runners[S.me], r=R(), D=hc.diag||{};
   const imp='<label class="drop" id="drop">'+tile("ty-mobility","upload")+'<span class="grow"><b>Import a file</b><br><span class="small muted">GPX, TCX or CSV exported from Garmin Connect, Strava or other apps</span></span><input type="file" id="fileIn" accept=".gpx,.tcx,.csv" multiple hidden></label><p class="tiny" id="importMsg" role="status"></p>';
   if(!NATIVE){
-    el.innerHTML='<div class="ttl-row">'+tile("ty-easy","sync")+'<div><h3>Watch & app sync</h3><span class="tiny">Automatic in the YHM Coach Android app</span></div></div><p class="small muted">The Android app reads runs from Health Connect, which these apps share to. Here in the browser, import exported files.</p><div class="apps">'+APPS.map(a=>'<span class="app-b">'+a+"</span>").join("")+"</div>"+imp;
+    el.innerHTML='<div class="ttl-row">'+tile("ty-easy","sync")+'<div><h3>Watch & app sync</h3><span class="tiny">Automatic in the YHM Coach app for Android and iPhone</span></div></div><p class="small muted">The phone apps read runs from Health Connect (Android) or Apple Health (iPhone), which these apps share to. Here in the browser, import exported files.</p><div class="apps">'+APPS.map(a=>'<span class="app-b">'+a+"</span>").join("")+"</div>"+imp;
     return;
   }
   if(S.me!==r.id){
@@ -388,15 +393,15 @@ function renderSyncCard(){
     return;
   }
   const on=hc.status==="on", when=hc.last?new Date(hc.last).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"numeric",minute:"2-digit"}):"";
-  const stTxt=syncing?"Syncing…":on?"Connected · last sync "+when:hc.status==="missing"?"Health Connect is not installed":hc.status==="denied"?"Permission needed":hc.status==="error"?"Last sync failed":"Not connected";
+  const stTxt=syncing?"Syncing…":on?"Connected · last sync "+when:hc.status==="missing"?IOS?"Apple Health is not available on this device":"Health Connect is not installed":hc.status==="denied"?"Permission needed":hc.status==="error"?"Last sync failed":"Not connected";
   const srcs=D.sources&&Object.keys(D.sources).length?Object.entries(D.sources).map(([k,v])=>k+" ("+v+")").join(", "):"none";
   const PN={workouts:"Exercise",distance:"Distance",heartRate:"Heart rate",steps:"Steps",weight:"Weight"};
   const gr=D.granted?Object.keys(PN).map(k=>(D.granted.includes(k)?"✓ ":"✗ ")+PN[k]).join("  "):"—";
-  el.innerHTML='<div class="card-h"><div class="ttl-row">'+tile("ty-easy","sync")+'<div><h3>Health Connect</h3><span class="tiny">'+esc(stTxt)+"</span></div></div>"+(on?'<span class="chip ty-ok">'+ic("check","sm")+" On</span>":"")+"</div>"+
+  el.innerHTML='<div class="card-h"><div class="ttl-row">'+tile("ty-easy","sync")+'<div><h3>'+HC+'</h3><span class="tiny">'+esc(stTxt)+"</span></div></div>"+(on?'<span class="chip ty-ok">'+ic("check","sm")+" On</span>":"")+"</div>"+
     '<p class="small muted">Runs, walks and workouts from your watch app arrive automatically when you open YHM Coach.</p><div class="apps">'+APPS.map(a=>'<span class="app-b">'+a+"</span>").join("")+"</div>"+
     (on&&D.found===0?banner("ty-warn","warn","<b>No workouts found in the last 30 days.</b> Your watch app is probably not sharing yet. Open <b>Connect your watch</b> below and follow the steps for your app."):"")+
     '<div class="row">'+(hc.status==="missing"?'<a class="btn grad" href="https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata">Get Health Connect</a>':'<button class="btn grad" type="button" data-act="hcSync"'+(syncing?" disabled":"")+">"+ic("sync","sm")+(on?" Sync now":" Connect")+"</button>")+
-    '<button class="btn ghost small" type="button" data-act="hcSettings">Health Connect settings</button><button class="btn ghost small" type="button" data-act="watchHelp">Connect your watch</button></div>'+
+    '<button class="btn ghost small" type="button" data-act="hcSettings">'+(IOS?"Open Apple Health":"Health Connect settings")+'</button><button class="btn ghost small" type="button" data-act="watchHelp">Connect your watch</button></div>'+
     (D.at?'<details><summary class="small" style="cursor:pointer;color:var(--primary);font-weight:600">Sync details</summary><div class="diag" style="margin-top:8px"><b>Permissions</b><span>'+esc(gr)+"</span><b>Workouts (30 days)</b><span>"+(D.found!=null?D.found:"—")+"</span><b>From</b><span>"+esc(srcs)+"</span><b>New this sync</b><span>"+(D.added||0)+"</span><b>Steps</b><span>"+(D.stepsErr?"not available":"ok")+"</span>"+(D.error?"<b>Error</b><span>"+esc(D.error)+"</span>":"")+"</div></details>":"")+imp;
 }
 async function healthSync(manual){
@@ -406,10 +411,10 @@ async function healthSync(manual){
   const D={at:Date.now()};
   try{
     const av=await NATIVE.health.available(); D.available=!!(av&&av.available);
-    if(!D.available){ S.hc={status:"missing",diag:D}; save(); if(manual) toast("Install Health Connect from the Play Store first"); return; }
+    if(!D.available){ S.hc={status:"missing",diag:D}; save(); if(manual) toast(IOS?"Apple Health is not available on this device":"Install Health Connect from the Play Store first"); return; }
     if(manual){ try{ await NATIVE.health.connect(); }catch(e){} }
     let g=[]; try{ g=await NATIVE.health.granted(); }catch(e){} D.granted=g;
-    if(!g.includes("workouts")){ S.hc={status:"denied",diag:D}; save(); if(manual) toast("Allow 'Exercise' for YHM Coach in Health Connect"); return; }
+    if(!g.includes("workouts")){ S.hc={status:"denied",diag:D}; save(); if(manual) toast(IOS?"Allow Workouts for YHM Coach: Health app → Profile → Apps → YHM Coach":"Allow 'Exercise' for YHM Coach in Health Connect"); return; }
     const since=S.hc&&S.hc.last?new Date(Math.max(S.hc.last-7*864e5,addDays(today(),-30).getTime())):addDays(today(),-30);
     const ws=await NATIVE.health.workouts(since.toISOString());
     D.found=ws.length; D.sources={};
@@ -450,6 +455,9 @@ function renderFuel(){
     '<p class="small muted">'+esc((p.sex==="f"?"Female":"Male")+", "+p.age+" y, "+p.weight+" kg, "+p.height+" cm · BMI "+b.toFixed(1)+(b>=25?" (above the healthy range: small deficit on easy days only)":b<18.5?" (below the healthy range: eat a little more)":" (healthy)"))+"</p>"+
     '<div class="stats">'+stat("ty-rest","moon","Rest day",rest.kcal+"<small>kcal</small>")+(lg?stat("ty-long","road",esc(longDay.type==="race"?"Race day":"Long run "+WD[longDay.date.getDay()]),lg.kcal+"<small>kcal</small>"):"")+
     stat("ty-strength","egg","Protein",n.prot==null?"Per doctor":n.prot+"<small>g/day</small>")+stat("ty-water","drop","Water today",(n.water/1000).toFixed(1)+"<small>L</small>")+"</div>"+
+    (function(){ const kc=n.carb*4+(n.prot||p.weight)*4+n.fat*9, c=n.carb*4/kc*100, pr=(n.prot||p.weight)*4/kc*100, f=100-c-pr;
+      return '<div><div class="row" style="justify-content:space-between"><span class="small"><b>Today\'s energy split</b></span><span class="small num">'+n.kcal+' kcal</span></div><div class="macro" style="margin-top:6px" role="img" aria-label="Carbs '+Math.round(c)+'%, protein '+Math.round(pr)+'%, fat '+Math.round(f)+'%"><i style="width:'+c+'%;background:var(--c-food)"></i><i style="width:'+pr+'%;background:var(--c-strength)"></i><i style="width:'+f+'%;background:var(--c-long)"></i></div>'+
+        '<div class="legend" style="margin-top:6px"><span><i style="background:var(--c-food)"></i>Carbs '+n.carb+' g</span><span><i style="background:var(--c-strength)"></i>Protein '+(n.prot==null?"per doctor":n.prot+" g")+'</span><span><i style="background:var(--c-long)"></i>Fat '+n.fat+' g</span></div></div>'; })()+
     '<p class="tiny">Carbs today '+n.carb+" g · fat about "+n.fat+" g. Energy from the Mifflin–St Jeor formula plus the day's training. More carbs on long and hard days, fewer on rest days.</p>";
   const next=findDay(addDays(t,1));
   $("#mealCard").innerHTML='<div class="card-h"><h3>Sample day: '+esc(day.title)+'</h3><span class="chip ty-food">'+esc({veg:"Veg",egg:"Egg",nonveg:"Non-veg"}[p.diet]||"Veg")+"</span></div>"+meals(p,day,next).map(mealRow).join("");
@@ -468,7 +476,16 @@ function renderFuel(){
 
 /* ---------- race ---------- */
 let UPDATES=EMBED_UPDATES.slice();
+function renderCountdown(){
+  const el=$("#cd"); if(!el) return;
+  const ms=new Date(2027,0,3,0,0,0)-new Date();
+  if(ms<=0){ el.innerHTML='<div style="grid-column:1/-1"><b>'+(ms>-864e5?"RACE DAY!":"THANK YOU")+"</b><span>"+(ms>-864e5?"Run strong, Yavatmal":"See you at YHM 2028")+"</span></div>"; return; }
+  const d=Math.floor(ms/864e5), h=Math.floor(ms%864e5/36e5), m=Math.floor(ms%36e5/6e4);
+  el.innerHTML="<div><b>"+d+"</b><span>Days</span></div><div><b>"+pad(h)+"</b><span>Hours</span></div><div><b>"+pad(m)+"</b><span>Minutes</span></div>";
+}
 function renderRace(){
+  renderCountdown();
+  const rt=$("#regText"); if(rt) rt.innerHTML=iso(today())<="2026-11-30"?"<b>Early bird: 25% off till 30 November 2026.</b> Register at www.yavatmalhealthmarathon.com":"<b>Registration is open</b> at www.yavatmalhealthmarathon.com";
   $("#updList").innerHTML=UPDATES.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map((u,i)=>'<div class="upd">'+tile(["ty-race","ty-quality","ty-long","ty-easy"][i%4],"megaphone","sm")+'<div><span class="tiny">'+esc(u.date?fmtD(parse(u.date))+" "+u.date.slice(0,4):"")+"</span><b>"+esc(u.title)+'</b><span class="small muted">'+esc(u.body)+"</span>"+(u.link?' <a href="'+esc(u.link)+'" target="_blank" rel="noopener" class="small">Open ↗</a>':"")+"</div></div>").join("");
   const rc=(R()&&R().checks.race)||{};
   const items=[["Bib pinned to the front of your T-shirt, timing chip attached","id"],["Shoes and socks you have already run in","shoe"],["Throwaway layer for the cool January morning","shirt"],["Breakfast 2–3 h before; water bottle","bottle"],["Reach Nehru Stadium 45 min before your start","clock"],["Emergency contact written on the back of your bib","phone"]];
@@ -478,6 +495,7 @@ function renderRace(){
     '<div class="contact"><span><span class="tiny">Phone / WhatsApp</span><br><code>9225183880</code></span><span class="row">'+
       (NATIVE?'<a class="btn ghost small" href="tel:+919225183880">'+ic("phone","sm")+" Call</a>":'<button class="btn ghost small" type="button" data-copy="9225183880">Copy</button>')+
       '<a class="btn ghost small" target="_blank" rel="noopener" href="https://wa.me/919225183880">'+ic("whatsapp","sm")+" WhatsApp</a></span></div>"+
+    '<div class="contact"><span><span class="tiny">Phone</span><br><code>9405166099</code></span>'+(NATIVE?'<a class="btn ghost small" href="tel:+919405166099">'+ic("phone","sm")+" Call</a>":'<button class="btn ghost small" type="button" data-copy="9405166099">Copy</button>')+"</div>"+
     '<div class="contact"><span><span class="tiny">Email</span><br><code>yavatmalhealthmarathon@gmail.com</code></span>'+
       (NATIVE?'<a class="btn ghost small" href="mailto:yavatmalhealthmarathon@gmail.com">'+ic("mail","sm")+" Email</a>":'<button class="btn ghost small" type="button" data-copy="yavatmalhealthmarathon@gmail.com">Copy</button>')+"</div>"+
     '<p class="tiny">Training Partner: Dose-T</p>';
@@ -495,10 +513,10 @@ async function scheduleNative(interactive){
   try{
     if(!S.rem.on){ await NATIVE.notify.clear(); return false; }
     const ok=await NATIVE.notify.permit(interactive);
-    if(!ok){ if(interactive) toast("Allow notifications: phone Settings → Apps → YHM Coach → Notifications"); return false; }
+    if(!ok){ if(interactive) toast(IOS?"Allow notifications: iPhone Settings → YHM Coach → Notifications":"Allow notifications: phone Settings → Apps → YHM Coach → Notifications"); return false; }
     const me=S.runners[S.me]||R(); if(!me) return false;
     const p=me.profile, plan=me.id===S.active?PLAN:buildPlan(p,adapt(me).ad), now=new Date(), list=[], [h,m]=hm(p.remind), [th,tm]=hm(S.rem.tomorrowAt), nm=firstName(p.name);
-    for(let i=0;i<21;i++){
+    for(let i=0;i<(IOS?14:21);i++){
       const d=addDays(today(),i), s=findIn(plan,d);
       if(S.rem.train&&s){ const at=new Date(d); at.setHours(h,m,0,0);
         if(at>now) list.push({id:1000+i,title:s.type==="rest"?"Rest day today "+EMO.rest:"Today: "+s.title+" "+(EMO[s.type]||""),body:s.type==="rest"?"Recover well, "+nm+". A relaxed walk is fine.":s.steps[0],at:at.toISOString()}); }
@@ -536,7 +554,7 @@ function renderReminders(){
       sw("rSleep","moon","ty-rest","Sleep","Lights out, lay out your kit",'<input type="time" id="rSleepAt" value="'+esc(Rm.sleepAt)+'" aria-label="Sleep reminder time">',Rm.sleep)+
       sw("rWeek","chart","ty-easy","Weekly summary","Sundays at 7 pm","",Rm.weekly)+"</div>"+
       '<div class="row"><button class="btn grad" type="button" data-act="remSave">'+ic("bell","sm")+(Rm.on?" Save reminders":" Turn on reminders")+"</button>"+(Rm.on?'<button class="btn ghost small" type="button" data-act="remTest">Send a test</button><button class="btn ghost small" type="button" data-act="remOff">Turn off</button>':"")+"</div>"+
-      (Rm.on&&Rm.count?'<p class="tiny">'+Rm.count+" reminders scheduled for the next 3 weeks. If they don't arrive, allow notifications and turn off battery optimisation for YHM Coach in phone settings.</p>":"");
+      (Rm.on&&Rm.count?'<p class="tiny">'+Rm.count+" reminders scheduled for the next "+(IOS?"2 weeks. If they don't arrive, allow notifications in iPhone Settings → YHM Coach → Notifications.":"3 weeks. If they don't arrive, allow notifications and turn off battery optimisation for YHM Coach in phone settings.")+"</p>":"");
     return;
   }
   const until=p.raceDate||RACE_DATE;
@@ -561,6 +579,13 @@ function downloadIcs(){
 }
 
 /* ---------- me / settings ---------- */
+const WATCH_HELP_IOS=[
+ ["Apple Watch","watch",["Record runs with the Workout app (Outdoor Run, Indoor Run, Walk).","They go to Apple Health automatically.","Open YHM Coach and tap Sync now."],""],
+ ["Garmin","watch",["Open the Garmin Connect app on this iPhone.","Tap More (☰) → Settings → Connected Apps → Apple Health.","Turn on sharing and allow Workouts, Steps, Heart rate and Weight.","Sync your watch with Garmin Connect, then tap Sync now in YHM Coach."],"Garmin shares activities after the watch syncs to Garmin Connect. Activities recorded before you turned sharing on may not appear."],
+ ["Strava","shoe",["Open Strava → You → Settings (gear) → Applications, Services and Devices.","Choose Health → Connect, and allow Workouts.","Tap Sync now in YHM Coach."],"Recording runs on your iPhone with Strava works even without a watch."],
+ ["Amazfit (Zepp), Mi, Noise, boAt and others","watch",["Open your watch app → Profile → Add accounts / Third-party access → Apple Health.","Turn it on and allow Workouts, Steps and Heart rate.","Tap Sync now in YHM Coach."],"Fitbit doesn't share workouts to Apple Health. Export a TCX or GPX file and import it on the Progress tab, or add runs by hand."],
+ ["Check Apple Health itself","sync",["Open the Health app → your profile picture (top right) → Apps.","Tap YHM Coach → Turn On All.","Tap your watch app there too and make sure it can write Workouts."],""]
+];
 const WATCH_HELP=[
  ["Garmin","watch",["Open the Garmin Connect app on this phone.","Tap More (☰ or ••• at the bottom) → Settings.","Open Health Connect (on some versions: Connected Apps → Health Connect).","Turn sharing on and tap Allow all.","Sync your watch with Garmin Connect, then tap Sync now in YHM Coach."],"Garmin shares activities after the watch syncs to Garmin Connect. Activities recorded before you turned sharing on may not appear."],
  ["Samsung Galaxy Watch","watch",["Open Samsung Health → ⋮ (top right) → Settings.","Tap Health Connect, then allow Samsung Health to write Exercise, Distance, Heart rate and Steps.","Tap Sync now in YHM Coach."],""],
@@ -579,9 +604,9 @@ function renderMe(){
     (S.order.length>1?'<div class="field"><label for="meSel">Watch sync and phone reminders are for</label><select id="meSel">'+S.order.map(id=>'<option value="'+id+'"'+(id===S.me?" selected":"")+">"+esc(S.runners[id].profile.name)+"</option>").join("")+"</select></div>":"")+
     '<p class="tiny">Coaches and families: add each runner to track their plan and progress separately.</p>';
   renderReminders();
-  $("#watchCard").innerHTML='<div class="ttl-row">'+tile("ty-easy","watch")+'<div><h3>Connect your watch</h3><span class="tiny">'+(NATIVE?"Through Health Connect on this phone":"In the YHM Coach Android app")+"</span></div></div>"+
-    WATCH_HELP.map(([n,i,steps,note])=>'<details class="wk" style="box-shadow:none"><summary><span class="row" style="gap:10px;flex-wrap:nowrap">'+tile("ty-primary",i,"sm")+"<b>"+esc(n)+"</b></span><span></span></summary><div style=\"padding:4px 14px 14px\">"+stepsHTML(steps)+(note?'<p class="tiny" style="margin-top:6px">'+esc(note)+"</p>":"")+"</div></details>").join("")+
-    (NATIVE?'<div class="row"><button class="btn grad" type="button" data-act="hcSync">'+ic("sync","sm")+' Sync now</button><button class="btn ghost small" type="button" data-act="hcSettings">Health Connect settings</button></div>':"");
+  $("#watchCard").innerHTML='<div class="ttl-row">'+tile("ty-easy","watch")+'<div><h3>Connect your watch</h3><span class="tiny">'+(NATIVE?"Through "+HC+" on this phone":"In the YHM Coach app for Android and iPhone")+"</span></div></div>"+
+    (IOS?WATCH_HELP_IOS:WATCH_HELP).map(([n,i,steps,note])=>'<details class="wk" style="box-shadow:none"><summary><span class="row" style="gap:10px;flex-wrap:nowrap">'+tile("ty-primary",i,"sm")+"<b>"+esc(n)+"</b></span><span></span></summary><div style=\"padding:4px 14px 14px\">"+stepsHTML(steps)+(note?'<p class="tiny" style="margin-top:6px">'+esc(note)+"</p>":"")+"</div></details>").join("")+
+    (NATIVE?'<div class="row"><button class="btn grad" type="button" data-act="hcSync">'+ic("sync","sm")+' Sync now</button><button class="btn ghost small" type="button" data-act="hcSettings">'+(IOS?"Open Apple Health":"Health Connect settings")+'</button></div>':"");
   $("#dataCard").innerHTML='<div class="ttl-row">'+tile("ty-rest","id","sm")+'<h3>Your data</h3></div><p class="small muted">Everything stays '+(NATIVE?"on this phone. Nothing is sent to any server.":"in this browser"+(dbOk?" and your Claude account, so it follows you across devices.":"."))+"</p>"+
     '<div class="row">'+(NATIVE?'<a class="btn ghost small" href="privacypolicy.html">Privacy policy</a>':"")+'<button class="btn ghost small" type="button" data-act="resetAll" id="resetBtn">Delete all data</button></div><p class="tiny">YHM Coach · Cotton City Runners Foundation, Yavatmal</p>';
 }
@@ -763,7 +788,7 @@ const ACT={
   logNew:()=>logSheet(iso(today())),
   hcSync:()=>healthSync(true),
   hcConnect:()=>{ go("progress"); healthSync(true); },
-  hcSettings:()=>NATIVE&&NATIVE.health.settings().catch(()=>toast("Open Health Connect from your phone settings")),
+  hcSettings:()=>{ if(IOS){ try{ location.href="x-apple-health://"; }catch(e){} return; } NATIVE&&NATIVE.health.settings().catch(()=>toast("Open Health Connect from your phone settings")); },
   watchHelp:()=>{ go("me"); setTimeout(()=>{ const w=$("#watchCard"); if(w){ w.scrollIntoView({behavior:"smooth"}); const dd=w.querySelector("details"); if(dd) dd.open=true; } },50); },
   setMe:()=>{ S.me=S.active; save(); renderAll(); if(S.rem.on) scheduleNative(false); toast("This phone now syncs for "+firstName(R().profile.name)); },
   remOn:()=>remindersOn(),
@@ -903,4 +928,4 @@ if(NATIVE){
   claude.use("sample").then(s=>{ if(s){ SAMPLE=s; $("#coachCard").hidden=false; paintIcons($("#coachCard")); } }).catch(()=>{});
   claude.use("downloads").then(d=>{ if(d){ DL=d; if(!$("#me").hidden) renderMe(); } }).catch(()=>{});
 }
-setInterval(()=>{ const n=iso(today()); if(n!==renderAll._d){ if(SEL===renderAll._d) SEL=n; renderAll._d=n; if(R()) renderAll(); if(NATIVE&&S.rem.on) scheduleNative(false); } },60000); renderAll._d=iso(today());
+setInterval(()=>{ renderCountdown(); const n=iso(today()); if(n!==renderAll._d){ if(SEL===renderAll._d) SEL=n; renderAll._d=n; if(R()) renderAll(); if(NATIVE&&S.rem.on) scheduleNative(false); } },60000); renderAll._d=iso(today());
