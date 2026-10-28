@@ -1,4 +1,4 @@
-# YHM Coach: Android app
+# YHM Coach: Android and iPhone app
 
 Training app for Yavatmal Health Marathon 2027 runners. Organised by Cotton City Runners Foundation, Yavatmal.
 
@@ -81,12 +81,24 @@ If the file isn't there, the app shows the updates built into it.
 
 ---
 
+---
+
+## iPhone app (App Store)
+
+- Project: `ios/` (Capacitor 8, Swift Package Manager). Bundle ID `com.yavatmalhealthmarathon.coach`, iPhone only, iOS 15+, HealthKit read-only (entitlement in `ios/App/App/App.entitlements`, usage text in `Info.plist`, privacy manifest `PrivacyInfo.xcprivacy`).
+- Icon and launch screen: `python3 brand/make_ios_assets.py`.
+- Cloud build: `.github/workflows/build-ios.yml` on a GitHub macOS 26 runner. Without secrets it checks the app compiles for the simulator. With `APPLE_TEAM_ID`, `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_P8` (App Store Connect API key, Admin) it signs automatically and uploads to App Store Connect / TestFlight.
+- App version = `version` in `package.json`; build number = the workflow run number.
+- Step-by-step store guide: the "YHM Coach: Play Store and App Store guide" doc.
+
+---
+
 ## For developers
 
 - Shared web app: `www/index.html` (same file powers the Claude-hosted page)
 - Native bridge: `src/native.js` (Capacitor 8, `@capgo/capacitor-health`, `@capacitor/local-notifications`)
 - Build the app's web folder: `npm run build:web` → `app-www/`
-- Local build: `npm ci && npm run sync`, then open `android/` in Android Studio and press Run
+- Local build: `npm ci && npm run sync`, then open `android/` in Android Studio and press Run. iPhone: `npm run sync:ios`, then open `ios/App/App.xcodeproj` in Xcode on a Mac
 - Brand art: official logos and stadium photo in `brand/source`; `python3 brand/make_assets.py` rebuilds the app icons, splash and store graphics
 - `android/app/yhm-sideload.keystore` signs test APKs so updates install over each other. It is not the Play Store key.
 - App ID: `com.yavatmalhealthmarathon.coach` · min Android 8.0 (API 26) · target API 36

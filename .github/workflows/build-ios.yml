@@ -8,7 +8,8 @@ name: Build YHM Coach iPhone app
 #   APPLE_TEAM_ID        10-character Team ID (developer.apple.com → Account → Membership details)
 #   ASC_KEY_ID           App Store Connect API key ID
 #   ASC_ISSUER_ID        App Store Connect API issuer ID
-#   ASC_KEY_P8_BASE64    the downloaded AuthKey_XXXX.p8 file, base64-encoded
+#   ASC_KEY_P8           the text of the downloaded AuthKey_XXXX.p8 file (open it in Notepad, copy everything)
+#                        (or ASC_KEY_P8_BASE64: the same file base64-encoded)
 
 on:
   push:
@@ -27,7 +28,7 @@ jobs:
       run:
         shell: bash   # bash -eo pipefail: a failing xcodebuild fails the step even when piped to tail
     env:
-      HAS_ASC: ${{ secrets.ASC_KEY_P8_BASE64 != '' && secrets.APPLE_TEAM_ID != '' }}
+      HAS_ASC: ${{ (secrets.ASC_KEY_P8 != '' || secrets.ASC_KEY_P8_BASE64 != '') && secrets.APPLE_TEAM_ID != '' }}
       BUILD_NUMBER: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
@@ -73,10 +74,12 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
           ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
         run: |
           KEY="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
-          printf '%s' "$ASC_KEY_P8_BASE64" | tr -d ' \n\r' | base64 -d > "$KEY"
+          if [ -n "$ASC_KEY_P8" ]; then printf '%s\n' "$ASC_KEY_P8" | tr -d '\r' > "$KEY"; else printf '%s' "$ASC_KEY_P8_BASE64" | tr -d ' \n\r' | base64 -d > "$KEY"; fi
+          grep -q "BEGIN PRIVATE KEY" "$KEY" || { echo "::error::The App Store Connect key secret doesn't look like a .p8 file"; exit 1; }
           AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
 
           xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
