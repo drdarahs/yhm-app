@@ -11,7 +11,8 @@ const EMBED_UPDATES = [
  {date:"2026-10-15",title:"Race date and venue",body:"Yavatmal Health Marathon 2027, 5th edition: Sunday 3 January 2027 at Nehru Stadium, Godhani Road, Yavatmal."},
  {date:"2026-10-15",title:"Dose-T is our Training Partner",body:"Dose-T is the official Training Partner for YHM 2027."}
 ];
-const AVC = ["#ef7e14","#01a0e2","#0c9a77","#c0359a","#1b4074","#e0243f","#7c5cd6"];
+const OLD_AVC = ["#ef7e14","#01a0e2","#0c9a77","#c0359a","#1b4074","#e0243f","#7c5cd6"];
+const AVC = ["#7DC243","#D7E21F","#2fa6a0","#c0359a","#e8730c","#e0243f","#7c5cd6"];
 const GOAL_NAME = {5:"Fitness Run",10:"Power Run",21:"Half Marathon",42:"Marathon"};
 const LEVELS = [["new","New to running","Can't run 2 km non-stop yet"],["beg","Beginner","Can run 2–5 km"],["int","Regular runner","5–10 km comfortably"],["adv","Experienced","Raced 21 km or more"]];
 const TL = {run:"Run",walk:"Walk / walk-run",strength:"Strength",mobility:"Yoga / mobility",cycle:"Cycling",other:"Activity"};
@@ -30,6 +31,7 @@ const TOM_TIP = {
 };
 const hm = s => { const m=/^(\d{1,2}):(\d{2})/.exec(s||""); return m?[+m[1],+m[2]]:[5,45]; };
 const firstName = n => String(n||"Runner").trim().split(/\s+/)[0];
+const avInk = c => { const h=String(c||"#7DC243").replace("#",""), v=[0,2,4].map(i=>parseInt(h.slice(i,i+2),16)/255); return (0.2126*v[0]+0.7152*v[1]+0.0722*v[2])>0.45?"#121512":"#ffffff"; };
 const initials = n => String(n||"R").trim().split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true,3000); }
 function copyText(txt,btn){
@@ -56,7 +58,7 @@ function migrateV1(v1){
 }
 function normalize(v){
   const s=Object.assign(blank(),v); s.rem=Object.assign({},DEF_REM,v.rem||{}); s.hc=s.hc||{};
-  s.order=(s.order||[]).filter(id=>s.runners[id]); Object.keys(s.runners).forEach(id=>{ if(!s.order.includes(id)) s.order.push(id); const r=s.runners[id]; r.logs=r.logs||[]; r.checks=r.checks||{}; r.weights=r.weights||[]; });
+  s.order=(s.order||[]).filter(id=>s.runners[id]); Object.keys(s.runners).forEach(id=>{ if(!s.order.includes(id)) s.order.push(id); const r=s.runners[id]; const oi=OLD_AVC.indexOf(r.color); if(oi>=0) r.color=AVC[oi]; r.logs=r.logs||[]; r.checks=r.checks||{}; r.weights=r.weights||[]; });
   if(!s.runners[s.active]) s.active=s.order[0]||null;
   if(s.me&&!s.runners[s.me]) s.me=null;
   return s;
@@ -169,7 +171,7 @@ function zonesHTML(s,pc,p){
 /* ---------- header & today ---------- */
 function renderHeader(){
   const r=R(), p=r.profile, t=today(), h=new Date().getHours();
-  const av=$("#avatar"); av.textContent=initials(p.name); av.style.background=r.color; av.style.setProperty("--avc",r.color);
+  const av=$("#avatar"); av.textContent=initials(p.name); av.style.background=r.color; av.style.color=avInk(r.color); av.style.setProperty("--avc",r.color);
   $("#hello").textContent=(h<12?"Good morning, ":h<17?"Good afternoon, ":"Good evening, ")+firstName(p.name);
   const wk=weekOf(t);
   $("#subhello").textContent=goalLabel(p.goal)+" km · "+(wk?"Week "+wk.n+" of "+PLAN.N:"YHM 2027")+(S.order.length>1?" · "+S.order.length+" runners ▾":" ▾");
@@ -195,7 +197,7 @@ function renderToday(){
   const rd=parse(p.raceDate), dd=dayDiff(t,rd);
   $("#heroDays").innerHTML=(dd>=0?dd:0)+"<small>"+(dd===0?"RACE DAY!":dd===1?"DAY TO GO":dd<0?"DAYS · RACE DONE":"DAYS TO GO")+"</small>";
   $("#heroGoal").textContent=goalLabel(p.goal)+" KM · "+(GOAL_NAME[p.goal]||"").toUpperCase();
-  const rdy=readiness(r), C=2*Math.PI*19, col=rdy.score>=75?"#3fd8ad":rdy.score>=55?"#ffc93c":"#ff8a65";
+  const rdy=readiness(r), C=2*Math.PI*19, col=rdy.score>=75?"#AED432":rdy.score>=55?"#ffc93c":"#ff8a65";
   $("#ready").innerHTML='<svg viewBox="0 0 46 46" aria-hidden="true"><circle cx="23" cy="23" r="19" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="5"/><circle class="arc" cx="23" cy="23" r="19" fill="none" stroke="'+col+'" stroke-width="5" stroke-linecap="round" stroke-dasharray="'+(C*rdy.score/100).toFixed(1)+" "+C.toFixed(1)+'" transform="rotate(-90 23 23)"/><text x="23" y="27.5" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="Barlow Condensed,Arial Narrow,sans-serif">'+rdy.score+"</text></svg><div><b>"+rdy.label+"</b><span>Readiness</span></div>";
   $("#heroSub").innerHTML=p.raceDate===RACE_DATE?"<b>SUN 03 · 01 · 2027</b> · Nehru Stadium, Godhani Road, Yavatmal":"<b>"+esc(fmtD(rd).toUpperCase())+" "+rd.getFullYear()+"</b> · Race day";
   $("#regLink").hidden=p.raceDate!==RACE_DATE||dd<0;
@@ -310,9 +312,9 @@ function renderProgress(){
   const cut28=iso(addDays(t,-28)), longest=Math.max(0,...runs.filter(l=>l.date>=cut28).map(l=>+l.km||0)), peak=PEAK[g][p.level];
   const active30=new Set(r.logs.filter(l=>l.date>=iso(addDays(t,-29))).map(l=>l.date)).size;
   const pct=n?s/n:0, RC=2*Math.PI*34;
-  $("#progHead").innerHTML='<div class="phero"><div style="position:relative;z-index:1;min-width:0"><div class="ttl-row"><span class="av" style="background:'+r.color+";--avc:"+r.color+'">'+esc(initials(p.name))+'</span><div style="min-width:0"><span class="label">Progress · '+goalLabel(p.goal)+' km</span><h2 style="font-size:1.4rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(p.name||"Runner")+'</h2></div></div>'+
+  $("#progHead").innerHTML='<div class="phero"><div style="position:relative;z-index:1;min-width:0"><div class="ttl-row"><span class="av" style="background:'+r.color+";--avc:"+r.color+";color:"+avInk(r.color)+'">'+esc(initials(p.name))+'</span><div style="min-width:0"><span class="label">Progress · '+goalLabel(p.goal)+' km</span><h2 style="font-size:1.4rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(p.name||"Runner")+'</h2></div></div>'+
       '<div class="big" style="margin-top:10px">'+total+'<small>KM</small></div><span class="small" style="opacity:.85">run in the plan so far</span></div>'+
-      '<svg viewBox="0 0 84 84" role="img" aria-label="'+Math.round(pct*100)+'% of sessions done"><circle cx="42" cy="42" r="34" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="8"/><circle class="arc" cx="42" cy="42" r="34" fill="none" stroke="#ffc93c" stroke-width="8" stroke-linecap="round" stroke-opacity="'+(pct>0?1:0)+'" stroke-dasharray="'+(RC*pct).toFixed(1)+" "+RC.toFixed(1)+'" transform="rotate(-90 42 42)"/><text x="42" y="44" text-anchor="middle" font-size="19" font-weight="800" fill="#fff" font-family="Barlow Condensed,Arial Narrow,sans-serif">'+Math.round(pct*100)+'%</text><text x="42" y="58" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,.8)" font-family="Mukta,sans-serif">sessions</text></svg></div>'+
+      '<svg viewBox="0 0 84 84" role="img" aria-label="'+Math.round(pct*100)+'% of sessions done"><circle cx="42" cy="42" r="34" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="8"/><circle class="arc" cx="42" cy="42" r="34" fill="none" stroke="#D7E21F" stroke-width="8" stroke-linecap="round" stroke-opacity="'+(pct>0?1:0)+'" stroke-dasharray="'+(RC*pct).toFixed(1)+" "+RC.toFixed(1)+'" transform="rotate(-90 42 42)"/><text x="42" y="44" text-anchor="middle" font-size="19" font-weight="800" fill="#fff" font-family="Barlow Condensed,Arial Narrow,sans-serif">'+Math.round(pct*100)+'%</text><text x="42" y="58" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,.8)" font-family="Mukta,sans-serif">sessions</text></svg></div>'+
     '<div class="stats">'+stat("ty-primary","road","Distance in plan",total+"<small>km</small>")+stat("ty-easy","check","Sessions done",(n?Math.round(s/n*100):0)+"<small>% · "+Math.round(s)+"/"+n+"</small>")+
     stat("ty-race","flame","On-plan streak",streak+"<small>days</small>")+stat("ty-long","cal","Active days",active30+"<small>/ 30</small>")+
     stat("ty-quality","medal","Predicted finish",PLAN.pc.pred?fmtTime(PLAN.pc.pred):"—")+stat("ty-mobility","bolt","5 km estimate",AD.ad.fiveK?fmtTime(AD.ad.fiveK):PLAN.pc.t5?fmtTime(PLAN.pc.t5):"—")+"</div>"+
@@ -598,7 +600,7 @@ function renderMe(){
   const el=$("#runnersCard");
   el.innerHTML='<div class="card-h"><div class="ttl-row">'+tile("ty-primary","user")+'<div><h3>Runners</h3><span class="tiny">Each runner has their own plan, logs and progress</span></div></div><button class="btn grad small" type="button" data-act="addRunner">'+ic("plus","sm")+" Add</button></div>"+
     S.order.map(id=>{ const r=S.runners[id], p=r.profile;
-      return '<div class="runner'+(id===S.active?" active":"")+'"><span class="av" style="background:'+r.color+";--avc:"+r.color+'">'+esc(initials(p.name))+'</span><div style="min-width:0"><b>'+esc(p.name)+"</b>"+(id===S.me?' <span class="chip ty-easy" style="font-size:.66rem">This phone</span>':"")+
+      return '<div class="runner'+(id===S.active?" active":"")+'"><span class="av" style="background:'+r.color+";--avc:"+r.color+";color:"+avInk(r.color)+'">'+esc(initials(p.name))+'</span><div style="min-width:0"><b>'+esc(p.name)+"</b>"+(id===S.me?' <span class="chip ty-easy" style="font-size:.66rem">This phone</span>':"")+
         '<div class="tiny">'+goalLabel(p.goal)+" km · "+esc((LEVELS.find(x=>x[0]===p.level)||[])[1]||"")+" · "+p.age+" y"+(p.example?" · example":"")+'</div></div><span class="row" style="gap:4px">'+
         (id!==S.active?'<button class="btn ghost small" type="button" data-switch="'+id+'">Open</button>':"")+'<button class="btn ghost small" type="button" data-edit="'+id+'">Edit</button><button class="del" type="button" data-delr="'+id+'" aria-label="Delete runner">'+ic("trash","sm")+"</button></span></div>"; }).join("")+
     (S.order.length>1?'<div class="field"><label for="meSel">Watch sync and phone reminders are for</label><select id="meSel">'+S.order.map(id=>'<option value="'+id+'"'+(id===S.me?" selected":"")+">"+esc(S.runners[id].profile.name)+"</option>").join("")+"</select></div>":"")+
@@ -638,7 +640,7 @@ function logSheet(date,prefill){
 }
 function whoSheet(){
   openSheet('<h3>Runners</h3><div>'+S.order.map(id=>{ const r=S.runners[id], p=r.profile;
-    return '<button type="button" class="runner'+(id===S.active?" active":"")+'" data-switch="'+id+'" style="width:100%;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;cursor:pointer;color:inherit"><span class="av" style="background:'+r.color+";--avc:"+r.color+'">'+esc(initials(p.name))+'</span><span><b>'+esc(p.name)+'</b><span class="tiny" style="display:block">'+goalLabel(p.goal)+" km"+(id===S.me?" · this phone":"")+"</span></span><span>"+(id===S.active?ic("check"):"")+"</span></button>"; }).join("")+"</div>"+
+    return '<button type="button" class="runner'+(id===S.active?" active":"")+'" data-switch="'+id+'" style="width:100%;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;cursor:pointer;color:inherit"><span class="av" style="background:'+r.color+";--avc:"+r.color+";color:"+avInk(r.color)+'">'+esc(initials(p.name))+'</span><span><b>'+esc(p.name)+'</b><span class="tiny" style="display:block">'+goalLabel(p.goal)+" km"+(id===S.me?" · this phone":"")+"</span></span><span>"+(id===S.active?ic("check"):"")+"</span></button>"; }).join("")+"</div>"+
     '<div class="row"><button class="btn grad" type="button" data-act="addRunner">'+ic("plus","sm")+' Add runner</button><button class="btn ghost" type="button" data-act="editRunner">Edit '+esc(firstName(R().profile.name))+'</button><button class="btn ghost" type="button" data-act="openMe">Settings</button></div>');
 }
 
@@ -659,7 +661,7 @@ function renderOB(){
   document.body.style.overflow="hidden";
   const d=OB.d, st=OB.step; let body="";
   if(st===0){
-    body='<div class="welcome"><div class="logo-card"><img src="img/yhm-logo.webp" alt="Yavatmal Health Marathon" width="640" height="427"></div><span class="pill" style="align-self:flex-start">5th edition · Sunday 3 January 2027</span><h1>Train for YHM 2027</h1>'+
+    body='<div class="welcome"><div class="logo-card"><img src="img/yhm-logo-dark.webp" alt="Yavatmal Health Marathon" width="1200" height="298"></div><span class="pill" style="align-self:flex-start">5th edition · Sunday 3 January 2027</span><h1>Train for YHM 2027</h1>'+
       '<p style="opacity:.92">A personal running, fitness and nutrition coach for the 5, 10 and 21 km races, built for your age, weight, health and habits.</p>'+
       '<div class="feat"><div>'+ic("cal","sm")+"Plan that adapts to you</div><div>"+ic("watch","sm")+"Garmin & watch sync</div><div>"+ic("bell","sm")+"Workout & water reminders</div><div>"+ic("chart","sm")+"Progress tracking</div></div></div>";
   } else if(st===1){

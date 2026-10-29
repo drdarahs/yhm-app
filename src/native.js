@@ -18,9 +18,9 @@ if (Capacitor.isNativePlatform()) {
 
     ready() {
       SplashScreen.hide().catch(() => {});
-      // Light status-bar icons over the navy app header (iPhone draws the header under the status bar).
+      // Light status-bar icons over the ink-black app header (iPhone draws the header under the status bar).
       StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
-      if (Capacitor.getPlatform() === 'android') StatusBar.setBackgroundColor({ color: '#1b4074' }).catch(() => {});
+      if (Capacitor.getPlatform() === 'android') StatusBar.setBackgroundColor({ color: '#121512' }).catch(() => {});
     },
 
     health: {
@@ -111,7 +111,7 @@ if (Capacitor.isNativePlatform()) {
         if (p.display === 'granted') {
           await LocalNotifications.createChannel({
             id: CHANNEL, name: 'Training reminders', description: 'Daily training, water and sleep reminders',
-            importance: 4, visibility: 1, vibration: true, lights: true, lightColor: '#1B4074',
+            importance: 4, visibility: 1, vibration: true, lights: true, lightColor: '#7DC243',
           }).catch(() => {});
           return true;
         }
@@ -122,7 +122,7 @@ if (Capacitor.isNativePlatform()) {
       async test() {
         await LocalNotifications.schedule({ notifications: [{
           id: 9999, title: 'YHM Coach reminders are on ✅', body: 'You will get your training, water and tomorrow-plan reminders like this.',
-          channelId: CHANNEL, smallIcon: 'ic_stat_yhm', iconColor: '#1B4074', schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true },
+          channelId: CHANNEL, smallIcon: 'ic_stat_yhm', iconColor: '#7DC243', schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true },
         }] });
       },
 
@@ -146,7 +146,7 @@ if (Capacitor.isNativePlatform()) {
           channelId: CHANNEL,
           isExactNotification: false,
           smallIcon: 'ic_stat_yhm',
-          iconColor: '#1B4074',
+          iconColor: '#7DC243',
           schedule: it.at
             ? { at: new Date(it.at), allowWhileIdle: true }
             : { on: { hour: it.hour, minute: it.minute }, repeats: true, allowWhileIdle: true },

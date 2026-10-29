@@ -17,7 +17,7 @@ page = page.replace(/<link id="gfonts"[^>]*>/, '<link rel="stylesheet" href="fon
 page = page.replace('<script>', '<script src="native.js"></script>\n<script>');
 const head = '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
   '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
-  '<meta name="theme-color" content="#1b4074">' +
+  '<meta name="theme-color" content="#121512">' +
   '<style>:root{color-scheme:light}' +
   'body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>' +
   '</head><body>';

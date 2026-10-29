@@ -3,22 +3,25 @@
   "appName": "YHM Coach",
   "webDir": "app-www",
   "android": {
-    "backgroundColor": "#ffffff"
+    "backgroundColor": "#121512"
   },
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 1500,
       "launchAutoHide": true,
-      "backgroundColor": "#ffffff",
+      "backgroundColor": "#121512",
       "showSpinner": false,
       "androidScaleType": "CENTER_CROP"
     },
     "LocalNotifications": {
       "smallIcon": "ic_stat_yhm",
-      "iconColor": "#1B4074"
+      "iconColor": "#7DC243"
     },
     "CapacitorHttp": {
       "enabled": true
     }
+  },
+  "ios": {
+    "backgroundColor": "#121512"
   }
 }
